@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The regression suite. Playwright's xUnit flavor, so one test framework
+       covers the whole repository. The sibling playwright-standards-csharp uses
+       the NUnit flavor; the README records why this one differs.
+
+       This project starts the application itself, so a fresh clone runs the
+       suite with no second terminal. -->
+  <PropertyGroup>
+    <RootNamespace>BlazorStandards.Regression.Tests</RootNamespace>
+    <AssemblyName>BlazorStandards.Regression.Tests</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+
+    <!-- The suite reads its own base URL, so a developer can point one run at a
+         deployed environment without editing anything. -->
+    <UserSecretsId>blazor-standards-regression</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Playwright.Xunit.v3" />
+    <PackageReference Include="Deque.AxeCore.Playwright" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\App\App.csproj" />
+    <ProjectReference Include="..\..\analyzers\LiteralAnalyzer\LiteralAnalyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

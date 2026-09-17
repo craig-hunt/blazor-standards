@@ -1,0 +1,15 @@
+@* One place decides how a field problem looks and when it hides, so eight call
+   sites cannot drift into eight spellings of the same thing. *@
+
+<p class="error" hidden="@Empty" @attributes="TestId.For(ElementTestId)">@Message</p>
+
+@code {
+    [Parameter]
+    public string? Message { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public required string ElementTestId { get; set; }
+
+    private bool Empty => string.IsNullOrEmpty(Message);
+}

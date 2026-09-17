@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-net/master/src/Stryker.Core/Stryker.Core/Schema/stryker-schema.json",
+  "stryker-config": {
+    "solution": "BlazorStandards.slnx",
+    "mutate": [
+      "**/src/App/Services/**/*.cs",
+      "**/src/App/Models/**/*.cs"
+    ],
+    "test-projects": [
+      "tests/App.Tests/App.Tests.csproj"
+    ],
+    "test-runner": "mtp",
+    "ignore-mutations": [],
+    "project-info": {
+      "name": "craig-hunt/blazor-standards",
+      "module": "services-and-models"
+    },
+    "coverage-analysis": "off",
+    "thresholds": {
+      "high": 85,
+      "low": 75,
+      "break": 70
+    },
+    "reporters": [
+      "progress",
+      "html",
+      "json"
+    ],
+    "mutation-level": "Standard"
+  }
+}

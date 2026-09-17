@@ -1,0 +1,36 @@
+@* The test id arrives as a parameter because three instances of this component
+   carry three different ids, all of them constants the page supplies. No id
+   literal appears here or there. *@
+
+<button type="button"
+        class="@ButtonClass"
+        @onclick="RaiseSelect"
+        @attributes="TestId.For(ElementTestId)">
+    @Label
+</button>
+
+@code {
+    private const string ActiveClass = "active";
+
+    [Parameter]
+    [EditorRequired]
+    public required TaskFilter Filter { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public required string Label { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public required string ElementTestId { get; set; }
+
+    [Parameter]
+    public bool Active { get; set; }
+
+    [Parameter]
+    public EventCallback<TaskFilter> OnSelect { get; set; }
+
+    private string? ButtonClass => Active ? ActiveClass : null;
+
+    private Task RaiseSelect() => OnSelect.InvokeAsync(Filter);
+}

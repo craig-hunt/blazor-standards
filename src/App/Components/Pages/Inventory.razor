@@ -1,0 +1,126 @@
+@page "/inventory"
+@inject IInventoryService Stock
+
+<PageTitle>@Copy.Inventory.Title</PageTitle>
+
+<h1 @attributes="TestId.For(TestIds.Inventory.Heading)">@Copy.Inventory.Heading</h1>
+
+<div class="toolbar">
+    <label for="@SearchFieldId">@Copy.Inventory.SearchLabel</label>
+    <input id="@SearchFieldId"
+           type="search"
+           value="@_search"
+           placeholder="@Copy.Inventory.SearchPlaceholder"
+           @oninput="SearchChanged"
+           @attributes="TestId.For(TestIds.Inventory.Search)" />
+    <button type="button" @onclick="Reset" @attributes="TestId.For(TestIds.Inventory.ResetButton)">
+        @Copy.Inventory.ResetButton
+    </button>
+</div>
+
+<p aria-live="@Aria.Value.Polite" @attributes="TestId.For(TestIds.Inventory.ResultCount)">
+    @Copy.Inventory.ResultCount(_view.ShownCount, _view.Total)
+</p>
+
+<table @attributes="TestId.For(TestIds.Inventory.Table)">
+    <thead>
+        <tr>
+            <th aria-sort="@SortState(InventoryColumn.Name)"
+                @attributes="TestId.For(TestIds.Inventory.HeaderName)">
+                <SortButton Column="InventoryColumn.Name"
+                            Label="@Copy.Inventory.ColumnName"
+                            ElementTestId="@TestIds.Inventory.SortByName"
+                            Current="_column"
+                            OnSort="SortByAsync" />
+            </th>
+            <th aria-sort="@SortState(InventoryColumn.Quantity)"
+                @attributes="TestId.For(TestIds.Inventory.HeaderQuantity)">
+                <SortButton Column="InventoryColumn.Quantity"
+                            Label="@Copy.Inventory.ColumnQuantity"
+                            ElementTestId="@TestIds.Inventory.SortByQuantity"
+                            Current="_column"
+                            OnSort="SortByAsync" />
+            </th>
+            <th aria-sort="@SortState(InventoryColumn.Status)"
+                @attributes="TestId.For(TestIds.Inventory.HeaderStatus)">
+                <SortButton Column="InventoryColumn.Status"
+                            Label="@Copy.Inventory.ColumnStatus"
+                            ElementTestId="@TestIds.Inventory.SortByStatus"
+                            Current="_column"
+                            OnSort="SortByAsync" />
+            </th>
+        </tr>
+    </thead>
+    <tbody @attributes="TestId.For(TestIds.Inventory.Body)">
+        @foreach (var item in _view.Shown)
+        {
+            <tr @attributes="TestId.For(TestIds.Inventory.Row)">
+                <td @attributes="TestId.For(TestIds.Inventory.ItemName)">@item.Name</td>
+                <td @attributes="TestId.For(TestIds.Inventory.ItemQuantity)">@item.Quantity</td>
+                <td @attributes="TestId.For(TestIds.Inventory.ItemStatus)">@item.Status</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p hidden="@AnyShown" @attributes="TestId.For(TestIds.Inventory.NoResults)">@Copy.Inventory.NoResults</p>
+
+@code {
+    private const string SearchFieldId = "search";
+
+    private IReadOnlyList<InventoryItem> _items = [];
+
+    private InventoryView _view = new([], 0, 0);
+
+    private string _search = string.Empty;
+
+    private InventoryColumn _column = InventoryColumn.Name;
+
+    private SortDirection _direction = SortDirection.Ascending;
+
+    private bool AnyShown => _view.ShownCount > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _items = await Stock.ItemsAsync(CancellationToken.None);
+        Refresh();
+    }
+
+    private void SearchChanged(ChangeEventArgs args)
+    {
+        _search = args.Value?.ToString() ?? string.Empty;
+        Refresh();
+    }
+
+    private void Reset()
+    {
+        _search = string.Empty;
+        Refresh();
+    }
+
+    private Task SortByAsync(InventoryColumn clicked)
+    {
+        (_column, _direction) = InventoryQuery.NextSort(_column, _direction, clicked);
+        Refresh();
+        return Task.CompletedTask;
+    }
+
+    private void Refresh() => _view = InventoryQuery.Apply(_items, _search, _column, _direction);
+
+    /// <summary>
+    /// What a header cell reports. The unsorted columns say none rather than
+    /// omitting the attribute, so a reader can tell "not sorted" from "this
+    /// table does not sort".
+    /// </summary>
+    private string SortState(InventoryColumn column)
+    {
+        if (column != _column)
+        {
+            return Aria.Value.None;
+        }
+
+        return _direction == SortDirection.Descending
+            ? Aria.Value.Descending
+            : Aria.Value.Ascending;
+    }
+}

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The analyzer runs against compiled snippets through Roslyn directly. The
+       Microsoft.CodeAnalysis.Testing harness targets xUnit v2 and this repo runs
+       v3, so driving the compilation here keeps a second test framework out.
+
+       The analyzer is referenced as a library rather than as an analyzer: these
+       tests instantiate it and inspect what it reports. -->
+  <PropertyGroup>
+    <RootNamespace>BlazorStandards.Analyzer.Tests</RootNamespace>
+    <AssemblyName>BlazorStandards.Analyzer.Tests</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\analyzers\LiteralAnalyzer\LiteralAnalyzer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/analyzers/">
+    <Project Path="analyzers/LiteralAnalyzer/LiteralAnalyzer.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/App/App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Analyzer.Tests/Analyzer.Tests.csproj" />
+    <Project Path="tests/App.Tests/App.Tests.csproj" />
+    <Project Path="tests/Regression.Tests/Regression.Tests.csproj" />
+  </Folder>
+</Solution>

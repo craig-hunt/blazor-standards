@@ -1,0 +1,14 @@
+@* Every link carries a test id from the constants class, and the active class
+   comes from NavLink rather than from a string this component assembles. *@
+
+<nav @attributes="TestId.For(TestIds.Nav.Container)">
+    <NavLink href="@AppRoutes.Tasks" Match="NavLinkMatch.All" @attributes="TestId.For(TestIds.Nav.Tasks)">
+        @Copy.Nav.Tasks
+    </NavLink>
+    <NavLink href="@AppRoutes.Signup" @attributes="TestId.For(TestIds.Nav.Signup)">
+        @Copy.Nav.Signup
+    </NavLink>
+    <NavLink href="@AppRoutes.Inventory" @attributes="TestId.For(TestIds.Nav.Inventory)">
+        @Copy.Nav.Inventory
+    </NavLink>
+</nav>

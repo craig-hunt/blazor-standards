@@ -1,0 +1,27 @@
+@inherits LayoutComponentBase
+
+<PrimaryNav />
+
+<main>
+    @Body
+</main>
+
+@* Interactive Server answers the first request with prerendered markup and
+   replaces it when the circuit connects. Text typed into the prerendered copy
+   never reaches the server and disappears in that swap, so a suite that fills a
+   field too early submits an empty one and fails somewhere else entirely.
+
+   RendererInfo reports the renderer actually running: false through prerender,
+   true once the circuit owns the DOM. Rendering this marker on that transition
+   gives the suite one thing to wait for, in one place, instead of a sleep in
+   every spec that types. *@
+@if (RendererInfo.IsInteractive)
+{
+    <span hidden @attributes="TestId.For(TestIds.App.Ready)"></span>
+}
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

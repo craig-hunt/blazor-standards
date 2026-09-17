@@ -38,9 +38,10 @@ dotnet run --project tests\Regression.Tests
 
 xUnit v3 brings Microsoft.Testing.Platform with it, and the .NET 10 SDK refuses
 to drive a platform project through the VSTest target that `dotnet test` uses.
-The command fails loudly rather than reporting a false pass. The VSTest adapter
-stays referenced anyway, because Stryker drives tests through VSTest and cannot
-see a platform application without it.
+The command fails loudly rather than reporting a false pass. Stryker meets the
+same wall, so `stryker-config.json` points it at the Microsoft Testing Platform
+runner. Left on its VSTest default it registers every test name, executes none,
+and reports a score that reads exactly like missing tests.
 
 ## Secrets
 
@@ -165,9 +166,12 @@ before anyone writes tests to raise it.
 
 Two notes on the configuration. `stryker-config.json` rejects any key its schema
 does not define and refuses to start, comment keys included, so that reasoning
-lives here instead. And `test-projects` narrows what Stryker reports on without
-keeping the regression suite out of the run, so the mutation job still pays for
-the browser specs.
+lives here instead. And the run reaches `App.Tests` alone. Pointing Stryker at a
+solution tests every project in that solution, which pulled the 25 browser specs
+into the mutant set and left the mutation job needing a browser and a running
+application that it never sets up. Scoping the run to the project under test and
+one test project took it from minutes to seconds and moved the score by nothing,
+which says the browser specs were never carrying it.
 
 **12. Warnings fail the build.** `TreatWarningsAsErrors`, `AnalysisMode=All`,
 and `EnforceCodeStyleInBuild`. Every rule this repository turns off is listed in

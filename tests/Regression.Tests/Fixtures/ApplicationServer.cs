@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using BlazorStandards.Regression.Tests.Constants;
 using Xunit;
@@ -25,6 +26,8 @@ public sealed class ApplicationServer : IAsyncLifetime
     private const string ProjectArgument = "--project";
     private const string UrlsArgument = "--urls";
     private const string NoBuildArgument = "--no-build";
+    private const string ConfigurationArgument = "--configuration";
+    private const string FallbackConfiguration = "Debug";
     private const string ProjectPath = "src/App/App.csproj";
     private const string SourceFolder = "src";
     private const string AppFolder = "App";
@@ -59,6 +62,25 @@ public sealed class ApplicationServer : IAsyncLifetime
         }
     }
 
+    /// <summary>
+    /// Gets the configuration this suite was built in, so the application starts
+    /// from the same one.
+    /// </summary>
+    /// <remarks>
+    /// dotnet run defaults to Debug whatever the caller built. CI builds Release
+    /// and nothing else, so a nested run that omits this looks for binaries a
+    /// clean checkout never produced, and the whole suite fails at startup rather
+    /// than in a test. A developer's machine hides that by holding both.
+    ///
+    /// The configuration comes from the attribute the build stamps onto this
+    /// assembly rather than from a path segment, which survives a build that
+    /// lands its output somewhere unexpected.
+    /// </remarks>
+    private static string BuildConfiguration =>
+        typeof(ApplicationServer).Assembly
+            .GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration
+            ?? FallbackConfiguration;
+
     public async ValueTask InitializeAsync()
     {
         if (await RespondsAsync().ConfigureAwait(false))
@@ -74,6 +96,8 @@ public sealed class ApplicationServer : IAsyncLifetime
                 ProjectArgument,
                 Path.Combine(RepositoryRoot, ProjectPath),
                 NoBuildArgument,
+                ConfigurationArgument,
+                BuildConfiguration,
                 UrlsArgument,
                 SuiteConfig.BaseUrl,
             },

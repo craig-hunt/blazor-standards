@@ -95,7 +95,20 @@ try {
         # machine, so a clean checkout has to restore it before the command
         # exists at all.
         Invoke-Step 'restore tools' { dotnet tool restore }
-        Invoke-Step 'mutation' { dotnet stryker }
+
+        # Stryker runs from the project under test rather than from here.
+        # Standing at a solution makes it test every project in that solution,
+        # which drags the 25 browser specs into the mutant set and leaves the
+        # run needing a browser and a started application. Standing in src\App
+        # restricts it to App.Tests, which kills every mutant on its own and
+        # finishes in seconds. The config stays at the root and gets passed in.
+        Push-Location (Join-Path $repoRoot 'src/App')
+        try {
+            Invoke-Step 'mutation' { dotnet stryker -f ..\..\stryker-config.json }
+        }
+        finally {
+            Pop-Location
+        }
     }
     else {
         Write-Host ''

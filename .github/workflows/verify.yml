@@ -95,12 +95,19 @@ jobs:
         run: dotnet tool restore
       # Coverage says a line ran. Mutation says a test would notice if that line
       # were wrong. The threshold in stryker-config.json fails this job below 70.
+      #
+      # It runs from the project under test because standing at the solution
+      # makes Stryker test every project in it, which pulls the browser specs
+      # into the mutant set and needs a browser and a running application that
+      # this job never sets up. The tool manifest still resolves from here,
+      # because tool discovery walks up to the repository root.
       - name: mutate services and models
-        run: dotnet stryker
+        run: dotnet stryker -f ../../stryker-config.json
+        working-directory: src/App
       - name: upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mutation-report
-          path: StrykerOutput/**/reports/**
+          path: src/App/StrykerOutput/**/reports/**
           if-no-files-found: ignore

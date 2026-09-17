@@ -1,13 +1,13 @@
 {
   "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-net/master/src/Stryker.Core/Stryker.Core/Schema/stryker-schema.json",
   "stryker-config": {
-    "solution": "BlazorStandards.slnx",
+    "project": "App.csproj",
     "mutate": [
       "**/src/App/Services/**/*.cs",
       "**/src/App/Models/**/*.cs"
     ],
     "test-projects": [
-      "tests/App.Tests/App.Tests.csproj"
+      "../../tests/App.Tests/App.Tests.csproj"
     ],
     "test-runner": "mtp",
     "ignore-mutations": [],

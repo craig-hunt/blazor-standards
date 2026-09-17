@@ -1,0 +1,113 @@
+# Four jobs run on every pull request. They are separate rather than one long
+# script so a failure names itself: a red "regression" job says the rendered
+# application broke, a red "build" job says the code does not compile or does
+# not meet the style the build enforces.
+
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  CONFIGURATION: Release
+  FRAMEWORK: net10.0
+
+jobs:
+  build:
+    name: build and style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: restore
+        run: dotnet restore
+      # Warnings are errors and EnforceCodeStyleInBuild is on, so a formatting
+      # slip and an unused variable both fail here rather than in review.
+      - name: build
+        run: dotnet build --configuration $CONFIGURATION --no-restore
+
+  test:
+    name: logic, markup, analyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: build
+        run: dotnet build --configuration $CONFIGURATION
+      # Each suite is an executable on Microsoft.Testing.Platform. dotnet test
+      # reports zero tests for these projects on the .NET 10 SDK, so they run
+      # directly, which is xUnit v3's documented path.
+      - name: logic and markup
+        run: dotnet run --project tests/App.Tests/App.Tests.csproj --configuration $CONFIGURATION --no-build
+      - name: analyzer
+        run: dotnet run --project tests/Analyzer.Tests/Analyzer.Tests.csproj --configuration $CONFIGURATION --no-build
+
+  regression:
+    name: regression and accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: build
+        run: dotnet build --configuration $CONFIGURATION
+      # Playwright's own install script, emitted into the build output, so the
+      # browser matches the pinned client rather than drifting to newest.
+      - name: install browsers
+        run: pwsh tests/Regression.Tests/bin/$CONFIGURATION/$FRAMEWORK/playwright.ps1 install --with-deps chromium
+      # ApplicationServer starts and stops the application around the run, so no
+      # separate server step appears here. The axe checks run inside this suite.
+      - name: regression
+        run: dotnet run --project tests/Regression.Tests/Regression.Tests.csproj --configuration $CONFIGURATION --no-build
+      - name: upload traces from failures
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: tests/Regression.Tests/bin/${{ env.CONFIGURATION }}/${{ env.FRAMEWORK }}/playwright-traces/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  mutation:
+    name: mutation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      # The tool manifest pins the versions, so CI and a developer's machine run
+      # the same mutation engine rather than whatever latest happens to be.
+      - name: restore tools
+        run: dotnet tool restore
+      # Coverage says a line ran. Mutation says a test would notice if that line
+      # were wrong. The threshold in stryker-config.json fails this job below 70.
+      #
+      # It runs from the project under test because standing at the solution
+      # makes Stryker test every project in it, which pulls the browser specs
+      # into the mutant set and needs a browser and a running application that
+      # this job never sets up. The tool manifest still resolves from here,
+      # because tool discovery walks up to the repository root.
+      - name: mutate services and models
+        run: dotnet stryker -f ../../stryker-config.json
+        working-directory: src/App
+      - name: upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: src/App/StrykerOutput/**/reports/**
+          if-no-files-found: ignore

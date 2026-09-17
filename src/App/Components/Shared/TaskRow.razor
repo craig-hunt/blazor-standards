@@ -1,0 +1,39 @@
+@* A presentational component: it receives a task and raises events. It reaches
+   no service, so the page owns what happens and this owns how it looks. *@
+
+<li class="@RowClass" @attributes="TestId.For(TestIds.Task.Item)">
+    <input type="checkbox"
+           checked="@Task.Completed"
+           aria-label="@Copy.Tasks.CompleteLabel(Task.Title)"
+           @onchange="RaiseToggle"
+           @attributes="TestId.For(TestIds.Task.ItemCheckbox)" />
+
+    <span @attributes="TestId.For(TestIds.Task.ItemTitle)">@Task.Title</span>
+
+    <button type="button"
+            aria-label="@Copy.Tasks.DeleteLabel(Task.Title)"
+            @onclick="RaiseRemove"
+            @attributes="TestId.For(TestIds.Task.DeleteButton)">
+        @Copy.Tasks.DeleteButton
+    </button>
+</li>
+
+@code {
+    private const string CompletedClass = "completed";
+
+    [Parameter]
+    [EditorRequired]
+    public required TaskItem Task { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnToggle { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnRemove { get; set; }
+
+    private string? RowClass => Task.Completed ? CompletedClass : null;
+
+    private Task RaiseToggle() => OnToggle.InvokeAsync(Task.Id);
+
+    private Task RaiseRemove() => OnRemove.InvokeAsync(Task.Id);
+}

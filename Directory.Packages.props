@@ -1,0 +1,50 @@
+<Project>
+
+  <!-- Central package management: one version per package for the whole
+       solution, so two projects cannot drift onto different builds of the same
+       dependency. Every version pins exactly. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Runtime">
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup Label="Analyzers">
+    <!-- Roslyn pins to the lowest version the analyzer must run inside rather
+         than the newest published, matching the sibling service repository. -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3.assert" Version="4.0.1" />
+    <!-- The VSTest adapter sits alongside xUnit v3's own platform support
+         rather than replacing it. Stryker drives tests through VSTest and
+         cannot see a Microsoft.Testing.Platform application without it. -->
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Regression">
+    <!-- Playwright's xUnit v3 flavor, so one framework covers the whole
+         repository. The plain Microsoft.Playwright.Xunit package depends on
+         xunit.extensibility.core 2.8.0, which is the v2 line and cannot sit
+         beside xunit.v3. The .v3 package depends on xunit.v3.extensibility.core
+         instead. The sibling suite uses the NUnit flavor; the README records
+         why this one differs. -->
+    <PackageVersion Include="Microsoft.Playwright.Xunit.v3" Version="1.62.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
+    <!-- Automated WCAG checks inside the regression suite. -->
+    <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.13.0" />
+  </ItemGroup>
+
+</Project>

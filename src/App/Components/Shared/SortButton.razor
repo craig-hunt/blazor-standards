@@ -1,0 +1,38 @@
+@* The button sorts. The header cell it sits in reports the order, because ARIA
+   allows aria-sort on a columnheader and disallows it on a button. An
+   accessibility check catches the difference; a suite that asserts on the
+   button does not, which is how the sibling projects still carry it. *@
+
+<button type="button"
+        class="@ButtonClass"
+        @onclick="RaiseSort"
+        @attributes="TestId.For(ElementTestId)">
+    @Label
+</button>
+
+@code {
+    private const string ActiveClass = "active";
+
+    [Parameter]
+    [EditorRequired]
+    public required InventoryColumn Column { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public required string Label { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public required string ElementTestId { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public required InventoryColumn Current { get; set; }
+
+    [Parameter]
+    public EventCallback<InventoryColumn> OnSort { get; set; }
+
+    private string? ButtonClass => Column == Current ? ActiveClass : null;
+
+    private Task RaiseSort() => OnSort.InvokeAsync(Column);
+}

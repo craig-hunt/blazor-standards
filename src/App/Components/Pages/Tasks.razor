@@ -1,0 +1,118 @@
+@page "/"
+@* Named TaskList rather than Tasks: this component compiles to a class called
+   Tasks, and a member may not share its enclosing type's name. *@
+@inject ITaskService TaskList
+
+<PageTitle>@Copy.Tasks.Title</PageTitle>
+
+<h1 @attributes="TestId.For(TestIds.Task.Heading)">@Copy.Tasks.Heading</h1>
+
+<EditForm Model="_draft" OnValidSubmit="AddAsync" @attributes="TestId.For(TestIds.Task.Form)">
+    <label for="@NewTaskFieldId">@Copy.Tasks.AddLabel</label>
+    <InputText id="@NewTaskFieldId"
+               @bind-Value="_draft.Title"
+               placeholder="@Copy.Tasks.AddPlaceholder"
+               @attributes="TestId.For(TestIds.Task.Input)" />
+    <button type="submit" @attributes="TestId.For(TestIds.Task.AddButton)">@Copy.Tasks.AddButton</button>
+</EditForm>
+
+@* aria-live announces the count to a screen reader when it changes, which a
+   sighted reader gets for free by watching the number move. *@
+<p aria-live="@Aria.Value.Polite" @attributes="TestId.For(TestIds.Task.Count)">
+    @Copy.Tasks.Remaining(_view.Remaining, _view.Total)
+</p>
+
+<ul @attributes="TestId.For(TestIds.Task.List)">
+    @foreach (var task in _view.Shown)
+    {
+        <TaskRow Task="task" OnToggle="ToggleAsync" OnRemove="RemoveAsync" />
+    }
+</ul>
+
+<div role="@Aria.Value.Group"
+     aria-label="@Copy.Nav.FilterGroupLabel"
+     @attributes="TestId.For(TestIds.Task.Filters)">
+    <TaskFilterButton Filter="TaskFilter.All"
+                      Label="@Copy.Tasks.FilterAll"
+                      ElementTestId="@TestIds.Task.FilterAll"
+                      Active="_filter == TaskFilter.All"
+                      OnSelect="FilterByAsync" />
+    <TaskFilterButton Filter="TaskFilter.Active"
+                      Label="@Copy.Tasks.FilterActive"
+                      ElementTestId="@TestIds.Task.FilterActive"
+                      Active="_filter == TaskFilter.Active"
+                      OnSelect="FilterByAsync" />
+    <TaskFilterButton Filter="TaskFilter.Completed"
+                      Label="@Copy.Tasks.FilterCompleted"
+                      ElementTestId="@TestIds.Task.FilterCompleted"
+                      Active="_filter == TaskFilter.Completed"
+                      OnSelect="FilterByAsync" />
+</div>
+
+<button type="button"
+        hidden="@AllActive"
+        @onclick="ClearCompletedAsync"
+        @attributes="TestId.For(TestIds.Task.ClearCompletedButton)">
+    @Copy.Tasks.ClearCompleted
+</button>
+
+<p hidden="@AnyShown" @attributes="TestId.For(TestIds.Task.EmptyState)">@Copy.Tasks.EmptyState</p>
+
+@code {
+    private const string NewTaskFieldId = "new-task";
+
+    private readonly TaskDraft _draft = new();
+
+    private TaskView _view = new([], 0, 0);
+
+    private TaskFilter _filter = TaskFilter.All;
+
+    private bool AnyShown => _view.Shown.Count > 0;
+
+    private bool AllActive => _view.Remaining == _view.Total;
+
+    protected override Task OnInitializedAsync() => RefreshAsync();
+
+    private async Task AddAsync()
+    {
+        await TaskList.AddAsync(_draft.Title, CancellationToken.None);
+        _draft.Title = string.Empty;
+        await RefreshAsync();
+    }
+
+    private async Task ToggleAsync(int id)
+    {
+        await TaskList.ToggleAsync(id, CancellationToken.None);
+        await RefreshAsync();
+    }
+
+    private async Task RemoveAsync(int id)
+    {
+        await TaskList.RemoveAsync(id, CancellationToken.None);
+        await RefreshAsync();
+    }
+
+    private async Task ClearCompletedAsync()
+    {
+        await TaskList.ClearCompletedAsync(CancellationToken.None);
+        await RefreshAsync();
+    }
+
+    private async Task FilterByAsync(TaskFilter filter)
+    {
+        _filter = filter;
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync() =>
+        _view = await TaskList.ViewAsync(_filter, CancellationToken.None);
+
+    /// <summary>
+    /// What the add form binds to. EditForm needs a model instance, and binding
+    /// straight to a field gives validation nowhere to attach later.
+    /// </summary>
+    private sealed class TaskDraft
+    {
+        public string Title { get; set; } = string.Empty;
+    }
+}

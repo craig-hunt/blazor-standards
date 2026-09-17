@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The reference application. Interactive Server render mode, so the
+       component tree lives here and the browser holds a SignalR circuit.
+       Secrets stay on this side of that circuit, which is why the render mode
+       and the secrets standard belong in the same decision. -->
+  <PropertyGroup>
+    <RootNamespace>BlazorStandards.App</RootNamespace>
+    <AssemblyName>BlazorStandards.App</AssemblyName>
+
+    <!-- Local developer secrets live in the user profile, never in the repo.
+         dotnet user-secrets set "App:AdminPassword" "value" -->
+    <UserSecretsId>blazor-standards</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\analyzers\LiteralAnalyzer\LiteralAnalyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="BlazorStandards.App.Tests" />
+  </ItemGroup>
+
+</Project>

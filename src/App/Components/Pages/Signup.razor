@@ -1,0 +1,172 @@
+@page "/signup"
+@implements IDisposable
+
+<PageTitle>@Copy.Signup.Title</PageTitle>
+
+<h1 @attributes="TestId.For(TestIds.Signup.Heading)">@Copy.Signup.Heading</h1>
+
+@* The form hides rather than unmounting, matching the sibling demo: a reader
+   who submits sees the confirmation in place of the form.
+
+   It carries an EditContext rather than a Model because the framework owns
+   aria-invalid on every Input component and derives it from that context. An
+   aria-invalid written here is discarded, silently: the field then announces
+   itself as valid to a screen reader while the page shows an error beside it,
+   and the CSS that styles an invalid border never matches either. Feeding the
+   validator's results into a ValidationMessageStore puts the framework and the
+   page back into agreement, and the input components report the state without
+   this file naming the attribute once. *@
+<EditForm EditContext="_editContext" OnSubmit="Submit" hidden="@_submitted" @attributes="TestId.For(TestIds.Signup.Form)">
+    <div class="field">
+        <label for="@FieldId.FullName">@Copy.Signup.FullNameLabel</label>
+        <InputText id="@FieldId.FullName"
+                   @bind-Value="_form.FullName"
+                   @attributes="TestId.For(TestIds.Signup.FullNameInput)" />
+        <FieldError Message="@ProblemFor(SignupField.FullName)"
+                    ElementTestId="@TestIds.Signup.FullNameError" />
+    </div>
+
+    <div class="field">
+        <label for="@FieldId.Email">@Copy.Signup.EmailLabel</label>
+        <InputText id="@FieldId.Email"
+                   @bind-Value="_form.Email"
+                   @attributes="TestId.For(TestIds.Signup.EmailInput)" />
+        <FieldError Message="@ProblemFor(SignupField.Email)"
+                    ElementTestId="@TestIds.Signup.EmailError" />
+    </div>
+
+    <div class="field">
+        <label for="@FieldId.Plan">@Copy.Signup.PlanLabel</label>
+        <InputSelect id="@FieldId.Plan"
+                     @bind-Value="_form.Plan"
+                     @attributes="TestId.For(TestIds.Signup.PlanSelect)">
+            <option value="">@Copy.Signup.PlanPlaceholder</option>
+            @foreach (var plan in Enum.GetValues<Plan>())
+            {
+                <option value="@plan">@plan</option>
+            }
+        </InputSelect>
+        <FieldError Message="@ProblemFor(SignupField.Plan)"
+                    ElementTestId="@TestIds.Signup.PlanError" />
+    </div>
+
+    <div class="field">
+        <label for="@FieldId.Seats">@Copy.Signup.SeatsLabel</label>
+        <InputNumber id="@FieldId.Seats"
+                     @bind-Value="_form.Seats"
+                     min="@SeatDefaults.Minimum"
+                     max="@SeatDefaults.Maximum"
+                     @attributes="TestId.For(TestIds.Signup.SeatsInput)" />
+    </div>
+
+    <div class="field">
+        <label for="@FieldId.Notes">@Copy.Signup.NotesLabel</label>
+        <InputTextArea id="@FieldId.Notes"
+                       @bind-Value="_form.Notes"
+                       rows="@NotesRows"
+                       @attributes="TestId.For(TestIds.Signup.NotesTextarea)" />
+    </div>
+
+    <div class="field checkbox">
+        <InputCheckbox id="@FieldId.Terms"
+                       @bind-Value="_form.AcceptTerms"
+                       @attributes="TestId.For(TestIds.Signup.TermsCheckbox)" />
+        <label for="@FieldId.Terms">@Copy.Signup.TermsLabel</label>
+        <FieldError Message="@ProblemFor(SignupField.Terms)"
+                    ElementTestId="@TestIds.Signup.TermsError" />
+    </div>
+
+    <button type="submit" @attributes="TestId.For(TestIds.Signup.SubmitButton)">
+        @Copy.Signup.SubmitButton
+    </button>
+</EditForm>
+
+<div role="@Aria.Value.Status" hidden="@(!_submitted)" @attributes="TestId.For(TestIds.Signup.Confirmation)">
+    <h2 @attributes="TestId.For(TestIds.Signup.ConfirmationHeading)">@Copy.Signup.ConfirmationHeading</h2>
+    <p @attributes="TestId.For(TestIds.Signup.ConfirmationSummary)">@_summary</p>
+</div>
+
+@code {
+    private const int NotesRows = 3;
+
+    /// <summary>
+    /// Which model property each problem belongs to. The validator files a
+    /// problem under its own key, and a message store addresses a property, so
+    /// something has to join the two. nameof keeps the join honest: renaming a
+    /// property moves this with it or fails the build.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> FieldProperty =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [SignupField.FullName] = nameof(SignupForm.FullName),
+            [SignupField.Email] = nameof(SignupForm.Email),
+            [SignupField.Plan] = nameof(SignupForm.Plan),
+            [SignupField.Terms] = nameof(SignupForm.AcceptTerms),
+        };
+
+    private readonly SignupForm _form = new();
+
+    private SignupProblems _problems = new(new Dictionary<string, string>(StringComparer.Ordinal));
+
+    private EditContext _editContext = null!;
+
+    private ValidationMessageStore _messages = null!;
+
+    private bool _submitted;
+
+    private string _summary = string.Empty;
+
+    /// <summary>
+    /// Element ids for the label-to-input association. Separate from test ids:
+    /// one serves assistive technology, the other serves the suite, and
+    /// conflating them means a change for one silently alters the other.
+    /// </summary>
+    private static class FieldId
+    {
+        internal const string FullName = "full-name";
+        internal const string Email = "email";
+        internal const string Plan = "plan";
+        internal const string Seats = "seats";
+        internal const string Notes = "notes";
+        internal const string Terms = "terms";
+    }
+
+    public void Dispose() => _editContext.OnValidationRequested -= HandleValidationRequested;
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(_form);
+        _messages = new ValidationMessageStore(_editContext);
+        _editContext.OnValidationRequested += HandleValidationRequested;
+    }
+
+    /// <summary>
+    /// Runs every check and files each problem against its field. Clearing
+    /// first matters: a message left behind from the previous submission would
+    /// mark a field a visitor has since corrected.
+    /// </summary>
+    private void HandleValidationRequested(object? sender, ValidationRequestedEventArgs args)
+    {
+        _messages.Clear();
+        _problems = SignupValidator.Validate(_form);
+
+        foreach (var problem in _problems.ByField)
+        {
+            _messages.Add(new FieldIdentifier(_form, FieldProperty[problem.Key]), problem.Value);
+        }
+    }
+
+    private void Submit()
+    {
+        if (!_editContext.Validate())
+        {
+            return;
+        }
+
+        _summary = Copy.Signup.Summary(_form.FullName.Trim(), _form.Plan.ToString() ?? string.Empty, _form.Seats);
+        _submitted = true;
+    }
+
+    private string? ProblemFor(string field) =>
+        _problems.ByField.TryGetValue(field, out var message) ? message : null;
+}
